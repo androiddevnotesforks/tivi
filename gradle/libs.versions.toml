@@ -1,8 +1,8 @@
 [versions]
-agp = "8.5.1"
+agp = "8.5.2"
 androidxactivity = "1.9.1"
 baselineprofile = "1.2.4"
-coil = "3.0.0-alpha09"
+coil = "3.0.0-alpha10"
 chucker = "4.0.0"
 circuit = "0.23.0"
 compose-multiplatform = "1.6.11"
@@ -10,14 +10,14 @@ coroutines = "1.8.1"
 haze = "0.7.3"
 kotlin = "2.0.10"
 kotlininject = "0.7.1"
-ksp = "2.0.0-1.0.24"
+ksp = "2.0.10-1.0.24"
 lyricist = "1.7.0"
 moko-permissions = "0.18.0"
 multiplatformsettings = "1.1.1"
 okhttp = "4.12.0"
-kermit = "2.0.4" # Pinned back as Store uses Kermit 1.x
+kermit = "1.2.3"
 ktor = "2.3.12"
-paging = "3.3.1"
+paging = "3.3.2"
 spotless = "6.25.0"
 sqldelight = "2.0.2"
 revenuecat = "1.0.0-beta.2"
@@ -49,7 +49,7 @@ wire = { id = "com.squareup.wire", version.ref = "wire" }
 androidx-activity-activity = { module = "androidx.activity:activity", version.ref = "androidxactivity" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxactivity" }
 androidx-browser = "androidx.browser:browser:1.8.0"
-androidx-collection = "androidx.collection:collection:1.4.2"
+androidx-collection = "androidx.collection:collection:1.4.3"
 androidx-core = "androidx.core:core-ktx:1.13.1"
 androidx-datastore = "androidx.datastore:datastore:1.1.1"
 androidx-splashscreen = "androidx.core:core-splashscreen:1.0.1"
@@ -64,7 +64,7 @@ androidx-test-rules = "androidx.test:rules:1.6.1"
 androidx-benchmark-macro = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "baselineprofile" }
 androidx-uiautomator = "androidx.test.uiautomator:uiautomator:2.3.0"
 
-androidx-work-runtime = "androidx.work:work-runtime-ktx:2.9.0"
+androidx-work-runtime = "androidx.work:work-runtime-ktx:2.9.1"
 
 appauth = "net.openid:appauth:0.11.1"
 

@@ -17,7 +17,6 @@ import app.tivi.common.compose.LocalPreferences
 import app.tivi.common.compose.LocalTiviDateFormatter
 import app.tivi.common.compose.LocalTiviTextCreator
 import app.tivi.common.compose.LocalWindowSizeClass
-import app.tivi.common.compose.ProvideStrings
 import app.tivi.common.compose.theme.TiviTheme
 import app.tivi.core.analytics.Analytics
 import app.tivi.navigation.DeepLinker
@@ -26,9 +25,9 @@ import app.tivi.navigation.LocalNavigator
 import app.tivi.screens.TiviScreen
 import app.tivi.screens.UrlScreen
 import app.tivi.settings.TiviPreferences
-import app.tivi.util.Logger
 import app.tivi.util.TiviDateFormatter
 import app.tivi.util.TiviTextCreator
+import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.setSingletonImageLoaderFactory
@@ -65,7 +64,6 @@ class DefaultTiviContent(
   private val imageLoader: ImageLoader,
   private val colorExtractor: ColorExtractor,
   private val deepLinker: DeepLinker,
-  private val logger: Logger,
 ) : TiviContent {
 
   @OptIn(ExperimentalMaterial3WindowSizeClassApi::class, ExperimentalCoilApi::class)
@@ -80,7 +78,7 @@ class DefaultTiviContent(
     remember { rootViewModel(coroutineScope) }
 
     val tiviNavigator: Navigator = remember(navigator) {
-      TiviNavigator(navigator, backstack, onOpenUrl, logger)
+      TiviNavigator(navigator, backstack, onOpenUrl)
     }
 
     LaunchDeepLinker(deepLinker = deepLinker, navigator = navigator)
@@ -97,24 +95,22 @@ class DefaultTiviContent(
 
     setSingletonImageLoaderFactory { imageLoader }
 
-    ProvideStrings {
-      CompositionLocalProvider(
-        LocalNavigator provides tiviNavigator,
-        LocalTiviDateFormatter provides tiviDateFormatter,
-        LocalTiviTextCreator provides tiviTextCreator,
-        LocalColorExtractor provides colorExtractor,
-        LocalPreferences provides preferences,
-        LocalWindowSizeClass provides calculateWindowSizeClass(),
-        LocalRetainedStateRegistry provides continuityRetainedStateRegistry(),
-      ) {
-        CircuitCompositionLocals(circuit) {
-          TiviTheme {
-            Home(
-              backStack = backstack,
-              navigator = tiviNavigator,
-              modifier = modifier,
-            )
-          }
+    CompositionLocalProvider(
+      LocalNavigator provides tiviNavigator,
+      LocalTiviDateFormatter provides tiviDateFormatter,
+      LocalTiviTextCreator provides tiviTextCreator,
+      LocalColorExtractor provides colorExtractor,
+      LocalPreferences provides preferences,
+      LocalWindowSizeClass provides calculateWindowSizeClass(),
+      LocalRetainedStateRegistry provides continuityRetainedStateRegistry(),
+    ) {
+      CircuitCompositionLocals(circuit) {
+        TiviTheme {
+          Home(
+            backStack = backstack,
+            navigator = tiviNavigator,
+            modifier = modifier,
+          )
         }
       }
     }
@@ -125,8 +121,9 @@ private class TiviNavigator(
   private val navigator: Navigator,
   private val backStack: SaveableBackStack,
   private val onOpenUrl: (String) -> Boolean,
-  private val logger: Logger,
 ) : Navigator {
+  private val logger by lazy { Logger.withTag("TiviNavigator") }
+
   override fun goTo(screen: Screen): Boolean {
     logger.d { "goTo. Screen: $screen. Current stack: ${backStack.toList()}" }
 

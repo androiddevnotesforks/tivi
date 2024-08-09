@@ -7,7 +7,7 @@ import app.tivi.data.traktauth.store.AuthStore
 import app.tivi.inject.ApplicationCoroutineScope
 import app.tivi.inject.ApplicationScope
 import app.tivi.util.AppCoroutineDispatchers
-import app.tivi.util.Logger
+import co.touchlab.kermit.Logger
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,6 @@ class TraktAuthRepository(
   private val authStore: AuthStore,
   private val loginAction: Lazy<TraktLoginAction>,
   private val refreshTokenAction: Lazy<TraktRefreshTokenAction>,
-  private val logger: Logger,
 ) {
   private val _state = MutableStateFlow(TraktAuthState.LOGGED_OUT)
   val state: StateFlow<TraktAuthState> get() = _state.asStateFlow()
@@ -34,38 +33,48 @@ class TraktAuthRepository(
   private var lastAuthState: AuthState? = null
   private var lastAuthStateExpiry: Instant = Instant.DISTANT_PAST
 
+  private val logger by lazy { Logger.withTag("TraktAuthRepository") }
+
   init {
     // Read the auth state from the AuthStore
     scope.launch {
       val state = getAuthState() ?: AuthState.Empty
-      updateAuthState(authState = state, skipPersist = true)
+      updateAuthState(authState = state, persist = false)
     }
   }
 
   suspend fun getAuthState(): AuthState? {
     val state = lastAuthState
-    if (state != null && lastAuthStateExpiry >= Clock.System.now()) {
-      logger.d { "[TraktAuthRepository] getAuthState. Using cached tokens: $state" }
+    if (state != null && Clock.System.now() < lastAuthStateExpiry) {
+      logger.d { "getAuthState. Using cached tokens: $state" }
       return state
     }
 
-    logger.d { "[TraktAuthRepository] getAuthState. Retrieving tokens from AuthStore" }
+    logger.d { "getAuthState. Retrieving tokens from AuthStore" }
     return withContext(dispatchers.io) { authStore.get() }
       ?.also { cacheAuthState(it) }
   }
 
   suspend fun login(): AuthState? {
-    logger.d { "[TraktAuthRepository] login()" }
-    return loginAction.value().also {
-      updateAuthState(authState = it ?: AuthState.Empty)
-    }
+    logger.d { "login()" }
+    return loginAction.value()
+      .also { updateAuthState(authState = it ?: AuthState.Empty) }
+      .also {
+        logger.d { "Login finished. Result: $it" }
+      }
   }
 
   suspend fun refreshTokens(): AuthState? {
-    logger.d { "[TraktAuthRepository] refreshTokens" }
-    return authStore.get()
-      ?.let { currentState -> refreshTokenAction.value.invoke(currentState) }
+    logger.d { "refreshTokens()" }
+    return getAuthState()
+      ?.let { currentState ->
+        logger.d { "Calling refreshTokenAction with $currentState" }
+        refreshTokenAction.value.invoke(currentState)
+      }
       .also { updateAuthState(authState = it ?: AuthState.Empty) }
+      .also {
+        logger.d { "refreshTokens finished. Result: $it" }
+      }
   }
 
   suspend fun logout() {
@@ -82,24 +91,24 @@ class TraktAuthRepository(
     }
   }
 
-  private suspend fun updateAuthState(authState: AuthState, skipPersist: Boolean = false) {
-    logger.d { "[TraktAuthRepository] updateAuthState: $authState. Persist: ${!skipPersist}" }
+  private suspend fun updateAuthState(authState: AuthState, persist: Boolean = true) {
+    logger.d { " updateAuthState: $authState. Persist: $persist" }
     _state.value = when {
       authState.isAuthorized -> TraktAuthState.LOGGED_IN
       else -> TraktAuthState.LOGGED_OUT
     }
     cacheAuthState(authState)
-    logger.d { "[TraktAuthRepository] Updated AuthState: ${_state.value}" }
+    logger.d { " Updated AuthState: ${_state.value}" }
 
-    if (!skipPersist) {
+    if (persist) {
       // Persist auth state
       withContext(dispatchers.io) {
         if (authState.isAuthorized) {
-          logger.d { "[TraktAuthRepository] Saving state to AuthStore: $authState" }
           authStore.save(authState)
+          logger.d { " Saved state to AuthStore: $authState" }
         } else {
-          logger.d { "[TraktAuthRepository] Clearing AuthStore" }
           authStore.clear()
+          logger.d { " Cleared AuthStore" }
         }
       }
     }
